@@ -56,6 +56,12 @@ The major feature that didn't make it in was keeping a record of the number of t
 
 ## Troubleshooting ##
 
+***I hit translate and it gave no output and stopped immediately, wtf?***
+
+The most common reason this would happen is if your output directory does not exist. 
+
+The other common reason for this is the directory that holds Game.exe should be in English, not Japanese (bug I never fixed...)
+
 ***I ran the translator but some text is still in Japanese, wtf?***
 
 Certain games, especially those by OneOne1 read most of their dialog and text from different script engines not native to RPG Maker. The tool will run for these and recognize some common data files to automatically skip over but to translate the actual text requires you to work with those other scripting engines and is not currently possible.
@@ -84,10 +90,6 @@ Sometimes games are coded in a way where a script will look up a choice by the a
 If it's still failing repeat the above but change Scripts to "Translate Single Lines" also. If still broken change the above two files to "Skip" and try again. 
 
 If it STILL occurs more investigation has to be done to figure out what is breaking. An easy way to do this is to back up your Data directory and copy over all the original data files from "ExtractedData". You can then replace the data from your backed up Data directory a file at a time until you find the offending file. 
- 
-***I hit translate and it gave no output and stopped immediately, wtf?***
-
-The most common reason this would happen is if your output directory does not exist. It will fail
 
 ***I hit translate and it stopped without finishing, wtf?***
 
