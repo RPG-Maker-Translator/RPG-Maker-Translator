@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPGMakerTranslator", "RPG-Maker-Autotranslate-GUI\RPGMakerTranslator.csproj", "{085D6638-F570-42BC-A4DE-6F7609B102CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{085D6638-F570-42BC-A4DE-6F7609B102CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{085D6638-F570-42BC-A4DE-6F7609B102CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{085D6638-F570-42BC-A4DE-6F7609B102CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{085D6638-F570-42BC-A4DE-6F7609B102CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
