@@ -177,8 +177,6 @@
             // breakBlocksOnKatakanaCheckbox
             // 
             this.breakBlocksOnKatakanaCheckbox.AutoSize = true;
-            this.breakBlocksOnKatakanaCheckbox.Checked = true;
-            this.breakBlocksOnKatakanaCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.breakBlocksOnKatakanaCheckbox.Location = new System.Drawing.Point(310, 48);
             this.breakBlocksOnKatakanaCheckbox.Name = "breakBlocksOnKatakanaCheckbox";
             this.breakBlocksOnKatakanaCheckbox.Size = new System.Drawing.Size(215, 17);
