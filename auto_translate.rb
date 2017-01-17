@@ -360,7 +360,7 @@ def translateFile(fileName)
 	translateMode = false
 	writeMode = false
 	output = ""
-	$linesInFile = `wc -l "#{fileName}"`.strip.split(' ')[0].to_i
+	$linesInFile = File.read(fileName).each_line.count
 	$currentLineNumber = 0
 	
 	filter = getFilterName fileName

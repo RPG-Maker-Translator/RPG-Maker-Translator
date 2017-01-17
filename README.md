@@ -60,7 +60,7 @@ The major feature that didn't make it in was keeping a record of the number of t
 
 The most common reason this would happen is if your output directory does not exist. 
 
-The other common reason for this is the directory that holds Game.exe should be in English, not Japanese (bug I never fixed...)
+The other common reason for this both the source and the destination directory cannot contain Japanese anywhere in the path. Ruby in Windows cannot seem to handle the copy when Japanese chars exist in the path.
 
 ***I ran the translator but some text is still in Japanese, wtf?***
 
