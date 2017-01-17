@@ -115,6 +115,8 @@ namespace RPGMakerTranslator
                         logCacheHitsCheckbox.Checked = values["logCacheHits"] != "0" ? true : false;
                         logTranslationsCheckbox.Checked = values["logTranslations"] != "0" ? true : false;
                         breakBlocksOnKatakanaCheckbox.Checked = values["breakBlocksOnKatakana"] != "0" ? true : false;
+                        translateScriptsCheckbox.Checked = values["translateScripts"] != "0" ? true : false;
+                        translateLinesWithVars.Checked = values["translateLinesWithVars"] != "0" ? true : false;
 
                         if (values.Keys.Contains("outputLanguage"))
                         {
@@ -211,6 +213,8 @@ namespace RPGMakerTranslator
                 r.Write("\"logCacheHits\": " + (logCacheHitsCheckbox.Checked ? "1" : "0") + ",\n");
                 r.Write("\"logTranslations\": " + (logTranslationsCheckbox.Checked ? "1" : "0") + ",\n");
                 r.Write("\"breakBlocksOnKatakana\": " + (breakBlocksOnKatakanaCheckbox.Checked ? "1" : "0") + ",\n");
+                r.Write("\"translateScripts\": " + (translateScriptsCheckbox.Checked ? "1" : "0") + ",\n");
+                r.Write("\"translateLinesWithVars\": " + (translateLinesWithVars.Checked ? "1" : "0") + ",\n");
                 r.Write("\"outputLanguage\": \"" + ((DataRowView)outputLanguageComboBox.SelectedValue)["Code"] +"\",\n");
                 for (int i = 0; i < fileNames.Length; ++i)
                 {

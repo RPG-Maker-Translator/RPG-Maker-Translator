@@ -33,6 +33,8 @@ $totalTranslations = 0
 $totalCacheHits = 0
 $totalFailures = 0
 $breakBlocksOnKatakana = true
+$translateScripts = false
+$translateLinesWithVars = false
 $preserveExistingData = true
 $lastLogged = Time.now
 $filter = {}
@@ -178,7 +180,7 @@ def translateLine(line)
 	katakanaStartIndex = -1
 	output = ""
 
-	if line.match(/<.+:.+>/) or line.match(/\$.+\[[0-9]+\].?=/)
+	if !$translateLinesWithVars and (line.match(/<.+:.+>/) or line.match(/\$.+\[[0-9]+\].?=/))
 		log "Found script or variable set, skipping line: #{line}"
 		return nil
 	end
@@ -191,6 +193,23 @@ end
 	
 	# TODO: DRY this out
 	while currentIndex < line.length
+	
+		if $translateLinesWithVars
+			lineToEnd = line.slice(currentIndex..-1)
+			match = line.match(/^<.+:.+>/)
+			if match
+				output += "#{match}"
+				currentIndex += "#{match}"
+				next
+			end 
+			match = line.match(/^\$.+\[[0-9]+\].?=/)
+			if match
+				output += "#{match}"
+				currentIndex += "#{match}"
+				next
+			end 			
+		end 
+	
 		# if there is a colon assume that text up to that point is a tag
 		if(tagIndex && currentIndex <= tagIndex)
 			output += line[currentIndex]
@@ -360,7 +379,11 @@ def translateFile(fileName)
 	translateMode = false
 	writeMode = false
 	output = ""
-	$linesInFile = File.read(fileName).each_line.count
+	
+	$linesInFile = getLinesInFile(fileName)
+	if $linesInFile == 0
+		return
+	end	
 	$currentLineNumber = 0
 	
 	filter = getFilterName fileName
@@ -471,6 +494,58 @@ def translateFile(fileName)
 	end
 end
 
+def getLinesInFile(fileName)
+	begin 
+		return File.read(fileName).each_line.count
+	rescue Exception => e 
+		return 0
+	end
+end
+
+def translateScriptFile(fileName)
+	log "\nTranslating Script: " + fileName
+	output = ""
+	$linesInFile = getLinesInFile(fileName)
+	if $linesInFile == 0 
+		return
+	end
+	$currentLineNumber = 0
+
+	file_content = File.open(fileName, "r:UTF-8", &:read)
+	file_content.each_line {|line|
+		if $currentLineNumber % $linesPerUpdate == 0
+			log "#{Time.now} Progress: Total [#{$totalProcessedLines}/#{$totalLines}] #{File.basename($outputPath) + "/" + File.basename(fileName)} [#{$currentLineNumber}/#{$linesInFile}] Cache hits [#{$totalCacheHits}] Translations [#{$totalTranslations}] Failures [#{$totalFailures}]"
+		end
+	
+		#lineToTrans = line.match(/((.*?)([^ ]+?) +=( *?)".+")?/)
+		lineToTrans = line.match(/([^ ]+) *= *".+"/)
+		if lineToTrans 
+			original = "#{lineToTrans}"
+			original = original.match(/".+"/)
+			original = "#{original}"
+			original = original.match(/".+"/)			
+			original = "#{original}"
+			#original.slice(1, original.length - 2)
+			trans = translateLine(original.gsub("%sの", "%s's ").gsub(/(%s)(?=[^(%s)])(?=[^'])/, '%s ').gsub(/[ ]{2,}/, ' '))
+			if trans != nil
+				output += line.sub(original, trans)
+			else 
+				output += line
+			end	
+		else 
+			output += line
+		end
+		$currentLineNumber += 1
+	}
+	
+	outputFileName = fileName.slice(0.. fileName.rindex(File.extname(fileName)) - 1)
+	outputFileName += "_tran.rb"
+	log "Writing translated script to #{outputFileName}"
+	File.open(outputFileName, 'wb:UTF-8') do |fo|
+		fo.write(output)
+	end
+end
+
 def decryptData
 	# find the game data file
 	$gameDataFileName = nil
@@ -500,7 +575,8 @@ def decryptData
 		begin
 			log `#{command}`		
 		rescue Exception => e  
-			log "RgssDecrypter crashed with message: #{e}"
+			log "RgssDecrypter crashed with message: #{e}", false, true
+			abort()
 		end	
 	end
 	
@@ -637,6 +713,13 @@ def loadSettings
 			if hash.key?("breakBlocksOnKatakana")
 				$breakBlocksOnKatakana = !hash["breakBlocksOnKatakana"].zero?
 			end			
+			if hash.key?("translateScripts")
+				$translateScripts = !hash["translateScripts"].zero?
+			end									
+			if hash.key?("translateLinesWithVars")
+				$translateLinesWithVars = !hash["translateLinesWithVars"].zero?
+			end	
+			
 			if hash.key?("outputLanguage")
 				$outputLanguage = hash["outputLanguage"]
 			end					
@@ -718,6 +801,21 @@ def translateDirectory
 	
 	processed = false	
 	
+	if $translateScripts
+		$scriptDir = File.join($extractedDataDir, "scripts")
+		log "Processing script directory [#{$scriptDir}]"
+		Dir.foreach($scriptDir) do |item|
+		  next if item == '.' or item == '..' or item.include? '_tran.rb'	  
+		  processed = true
+		  if !$skipTranslate 
+			translateScriptFile(File.join($scriptDir, item))
+			dumpCache
+		  else
+			break	  
+		  end
+		end	
+	end	
+	
 	Dir.foreach($extractedJsonDir) do |item|
 	  next if item == '.' or item == '..' or  File.extname(item) != '.json'	  
 	  processed = true
@@ -732,7 +830,7 @@ def translateDirectory
 	if processed && !$skipTranslate 
 		dumpCache
 	end
-	
+		
 	return processed
 end
 
@@ -772,14 +870,18 @@ def copyGameDirectoryToOutput
 	Dir.mkdir $outputPath
 	setupLog
 	log "Copying [#{$directory}] to [#{$outputPath}]"	
-	FileUtils.cp_r File.join($directory, '.'), $outputPath		
+	FileUtils.cp_r File.join($directory, '.'), $outputPath
 end
 
 if __FILE__ == $0
 	startTime = Time.now
-	$directory = ARGV[0]
-	if !$directory
-		abort("Error: Must provide root directory of RPG maker game with assets already decrypted")	
+	if ARGV[0] == nil
+		abort("Error: You must pass in the source directory:\nruby auto_translate.rb \"C:\SomeDirectoryContainingGame\"")
+	end
+	$directory = ARGV[0]	
+	$directory = $directory.gsub('\\', '/')
+	if !Dir.exists?($directory)
+		abort("Error: Source directory does not exist")
 	end
 
 	loadSettings

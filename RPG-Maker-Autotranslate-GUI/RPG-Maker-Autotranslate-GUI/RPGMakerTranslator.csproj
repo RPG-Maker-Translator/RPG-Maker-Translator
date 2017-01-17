@@ -132,7 +132,8 @@ ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)auto_translate.rb" "
 ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)settings.json" "$(TargetDir)..\..\..\..\settings.json"
 ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)languages.json" "$(TargetDir)..\..\..\..\languages.json"
 ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)lastOpened" "$(TargetDir)..\..\..\..\lastOpened"
-ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)translation_en.json" "$(TargetDir)..\..\..\..\translation_en.json"</PostBuildEvent>
+ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)translation_en.json" "$(TargetDir)..\..\..\..\translation_en.json"
+ruby "$(TargetDir)..\..\..\..\make_symlink.rb" "$(TargetDir)sourceDirectory" "$(TargetDir)..\..\..\..\sourceDirectory"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

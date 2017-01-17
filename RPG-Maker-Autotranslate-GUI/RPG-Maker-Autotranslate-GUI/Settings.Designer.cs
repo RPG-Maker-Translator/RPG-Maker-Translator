@@ -49,6 +49,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.outputLanguageComboBox = new System.Windows.Forms.ComboBox();
+            this.translateScriptsCheckbox = new System.Windows.Forms.CheckBox();
+            this.translateLinesWithVars = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // label2
@@ -229,11 +231,33 @@
             this.outputLanguageComboBox.Size = new System.Drawing.Size(122, 21);
             this.outputLanguageComboBox.TabIndex = 20;
             // 
+            // translateScriptsCheckbox
+            // 
+            this.translateScriptsCheckbox.AutoSize = true;
+            this.translateScriptsCheckbox.Location = new System.Drawing.Point(310, 139);
+            this.translateScriptsCheckbox.Name = "translateScriptsCheckbox";
+            this.translateScriptsCheckbox.Size = new System.Drawing.Size(140, 17);
+            this.translateScriptsCheckbox.TabIndex = 22;
+            this.translateScriptsCheckbox.Text = "Translate Scripts (Risky)";
+            this.translateScriptsCheckbox.UseVisualStyleBackColor = true;
+            // 
+            // translateLinesWithVars
+            // 
+            this.translateLinesWithVars.AutoSize = true;
+            this.translateLinesWithVars.Location = new System.Drawing.Point(310, 117);
+            this.translateLinesWithVars.Name = "translateLinesWithVars";
+            this.translateLinesWithVars.Size = new System.Drawing.Size(200, 17);
+            this.translateLinesWithVars.TabIndex = 23;
+            this.translateLinesWithVars.Text = "Translate Lines with variables (Risky)";
+            this.translateLinesWithVars.UseVisualStyleBackColor = true;
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(527, 540);
+            this.Controls.Add(this.translateLinesWithVars);
+            this.Controls.Add(this.translateScriptsCheckbox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.outputLanguageComboBox);
             this.Controls.Add(this.label1);
@@ -283,5 +307,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ComboBox outputLanguageComboBox;
+        private System.Windows.Forms.CheckBox translateScriptsCheckbox;
+        private System.Windows.Forms.CheckBox translateLinesWithVars;
     }
 }

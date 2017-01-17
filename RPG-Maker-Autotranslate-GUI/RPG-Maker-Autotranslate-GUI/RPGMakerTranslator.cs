@@ -167,12 +167,19 @@ namespace WindowsFormsApplication1
         {
             this.Invoke((MethodInvoker)delegate
             {
+                string dirName = Path.GetFileName(directoryTextBox.Text);
+                updateLogWindow(dirName);
+
+                if (!Directory.Exists(getOutputPath(dirName)))
+                {
+                    MessageBox.Show("Incomplete", "Output directory not found, operation unsuccessful", MessageBoxButtons.OK);
+                    return;
+                }
+                
                 translateButton.Text = "Translate";
                 var window = MessageBox.Show("Open Game folder?", "Operation Finished", MessageBoxButtons.YesNo);
                 if (window == DialogResult.Yes)
                 {
-                    string dirName = Path.GetFileName(directoryTextBox.Text);
-                    updateLogWindow(dirName);
                     Process.Start(new System.Diagnostics.ProcessStartInfo()
                     {                         
                         FileName = getOutputPath(dirName),
