@@ -172,7 +172,7 @@ namespace WindowsFormsApplication1
 
                 if (!Directory.Exists(getOutputPath(dirName)))
                 {
-                    MessageBox.Show("Incomplete", "Output directory not found, operation unsuccessful", MessageBoxButtons.OK);
+                    MessageBox.Show("Output directory not found, operation unsuccessful", "Error", MessageBoxButtons.OK);
                     return;
                 }
                 
@@ -250,7 +250,7 @@ namespace WindowsFormsApplication1
                     line = line.Substring("Progress: Total".Length + 1, line.IndexOf("]") - "Progress: Total".Length + 1);
                     string done = line.Substring(1, line.IndexOf("/") - 1);
                     string total = line.Substring(line.IndexOf("/") + 1, line.IndexOf("]") - line.IndexOf("/") - 1);
-                    progress = Math.Min((int)Math.Ceiling(Decimal.Parse(done) / Decimal.Parse(total) * 100), 100); ;
+                    progress = Int32.Parse(total) > 0 ? Math.Min((int)Math.Ceiling(Decimal.Parse(done) / Decimal.Parse(total) * 100), 100) : 0;
                 }
 
                 this.Invoke((MethodInvoker)delegate

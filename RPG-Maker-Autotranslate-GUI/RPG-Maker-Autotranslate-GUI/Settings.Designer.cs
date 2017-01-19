@@ -51,6 +51,8 @@
             this.outputLanguageComboBox = new System.Windows.Forms.ComboBox();
             this.translateScriptsCheckbox = new System.Windows.Forms.CheckBox();
             this.translateLinesWithVars = new System.Windows.Forms.CheckBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.characterOverrideTextbox = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // label2
@@ -77,7 +79,7 @@
             // saveButton
             // 
             this.saveButton.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.saveButton.Location = new System.Drawing.Point(0, 517);
+            this.saveButton.Location = new System.Drawing.Point(0, 548);
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new System.Drawing.Size(527, 23);
             this.saveButton.TabIndex = 5;
@@ -189,7 +191,7 @@
             // flowLayoutPanel1
             // 
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 233);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 264);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(527, 284);
             this.flowLayoutPanel1.TabIndex = 17;
@@ -198,16 +200,16 @@
             // 
             this.allFiltersComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.allFiltersComboBox.FormattingEnabled = true;
-            this.allFiltersComboBox.Location = new System.Drawing.Point(342, 189);
+            this.allFiltersComboBox.Location = new System.Drawing.Point(345, 231);
             this.allFiltersComboBox.Name = "allFiltersComboBox";
-            this.allFiltersComboBox.Size = new System.Drawing.Size(122, 21);
+            this.allFiltersComboBox.Size = new System.Drawing.Size(145, 21);
             this.allFiltersComboBox.TabIndex = 18;
             this.allFiltersComboBox.SelectedIndexChanged += new System.EventHandler(this.allFiltersComboBox_SelectedIndexChanged);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(288, 192);
+            this.label1.Location = new System.Drawing.Point(291, 234);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(48, 13);
             this.label1.TabIndex = 19;
@@ -216,7 +218,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 192);
+            this.label3.Location = new System.Drawing.Point(12, 234);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(90, 13);
             this.label3.TabIndex = 21;
@@ -226,9 +228,9 @@
             // 
             this.outputLanguageComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.outputLanguageComboBox.FormattingEnabled = true;
-            this.outputLanguageComboBox.Location = new System.Drawing.Point(108, 189);
+            this.outputLanguageComboBox.Location = new System.Drawing.Point(111, 231);
             this.outputLanguageComboBox.Name = "outputLanguageComboBox";
-            this.outputLanguageComboBox.Size = new System.Drawing.Size(122, 21);
+            this.outputLanguageComboBox.Size = new System.Drawing.Size(153, 21);
             this.outputLanguageComboBox.TabIndex = 20;
             // 
             // translateScriptsCheckbox
@@ -251,11 +253,30 @@
             this.translateLinesWithVars.Text = "Translate Lines with variables (Risky)";
             this.translateLinesWithVars.UseVisualStyleBackColor = true;
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(12, 196);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(153, 13);
+            this.label4.TabIndex = 24;
+            this.label4.Text = "Honorary Japanese Characters";
+            // 
+            // characterOverrideTextbox
+            // 
+            this.characterOverrideTextbox.Location = new System.Drawing.Point(174, 193);
+            this.characterOverrideTextbox.Name = "characterOverrideTextbox";
+            this.characterOverrideTextbox.Size = new System.Drawing.Size(316, 20);
+            this.characterOverrideTextbox.TabIndex = 25;
+            this.characterOverrideTextbox.Text = "ー,";
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(527, 540);
+            this.ClientSize = new System.Drawing.Size(527, 571);
+            this.Controls.Add(this.characterOverrideTextbox);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.translateLinesWithVars);
             this.Controls.Add(this.translateScriptsCheckbox);
             this.Controls.Add(this.label3);
@@ -309,5 +330,7 @@
         private System.Windows.Forms.ComboBox outputLanguageComboBox;
         private System.Windows.Forms.CheckBox translateScriptsCheckbox;
         private System.Windows.Forms.CheckBox translateLinesWithVars;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox characterOverrideTextbox;
     }
 }

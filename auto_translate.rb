@@ -39,6 +39,7 @@ $preserveExistingData = true
 $lastLogged = Time.now
 $filter = {}
 $outputLanguage = 'en'
+$overrideCharacters = /ー,/
 
 def translateBlock(block)
 	if block.strip.length == 0
@@ -131,7 +132,7 @@ def isKatakana(char)
 end
 
 def isTerminatingCharacter(char)
-	char != 'ー' and (char.match(/[ '♥“”１２３４５６９０▲●←↑→↓（）▽★・、～」▼■＠「.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_\[\]\"<>\n|:…！?…。♪『？―”“~\/]/) == true or !(char =~ /\p{Han}|\p{Katakana}|\p{Hiragana}/))
+	!char.match($overrideCharacters) and (char.match(/[ '♥“”１２３４５６９０▲●←↑→↓（）▽★・、～」▼■＠「.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_\[\]\"<>\n|:…！?…。♪『？―”“~\/]/) == true or !(char =~ /\p{Han}|\p{Katakana}|\p{Hiragana}/))
 end
 
 def log(line, debug = false, forceWrite = false)
@@ -170,7 +171,36 @@ def dumpCache()
 	end	
 end
 
-def translateLine(line)
+def scriptVariable(lineToEnd)
+	# ex: <フェロモン値[180]>\r\n<MAXMP +100>\r\n<消費MP％減:50>
+	match = lineToEnd.match(/^<.+?:.+?>/)
+	if match
+		return "#{match}"
+	end 
+	# ex: $gamevar[123] =
+	match = lineToEnd.match(/^\$.+?\[[0-9]+?\].?=/)
+	if match
+		return "#{match}"
+	end 	
+	# ex: \\c[5]
+	match = lineToEnd.match(/^\\\\.+?\[.+?\]/)
+	if match
+		return "#{match}"
+	end 				
+	# ex: _tv[\"移動場所設定\"]
+	match = lineToEnd.match(/^[^\s\\]+?\[\\".+?"\]/)			
+	if match
+		return "#{match}"	
+	end 		
+	# ex: set_npm(8, "test4", 0,0, 150)
+	match = lineToEnd.match(/^[^\s\\]+?\(.*?".*?".*?\)/)
+	if match
+		return "#{match}"
+	end 	
+	return nil
+end 
+
+def translateLine(line, isArray = false)
 	if !line.include? '"' || !line
 		return nil
 	end
@@ -180,142 +210,56 @@ def translateLine(line)
 	katakanaStartIndex = -1
 	output = ""
 
-	if !$translateLinesWithVars and (line.match(/<.+:.+>/) or line.match(/\$.+\[[0-9]+\].?=/))
-		log "Found script or variable set, skipping line: #{line}"
-		return nil
-	end
-	
-begin
-  tagIndex = line.index('：')
-rescue Exception => e
-  log e
-end
-	
 	# TODO: DRY this out
 	while currentIndex < line.length
 	
-		if $translateLinesWithVars
-			lineToEnd = line.slice(currentIndex..-1)
-			match = line.match(/^<.+:.+>/)
-			if match
-				output += "#{match}"
-				currentIndex += "#{match}"
-				next
-			end 
-			match = line.match(/^\$.+\[[0-9]+\].?=/)
-			if match
-				output += "#{match}"
-				currentIndex += "#{match}"
-				next
-			end 			
-		end 
-	
-		# if there is a colon assume that text up to that point is a tag
-		if(tagIndex && currentIndex <= tagIndex)
-			output += line[currentIndex]
-			currentIndex += 1
-			next
-		end
-		# \\ check token block
-		currentChar = line[currentIndex]	
-		variableBlock = line.slice(currentIndex..-1).match(/＠[^0-9].*[0-9]/)
-		if(currentChar == '＠' and variableBlock)
-			if(blockStartIndex != -1 or katakanaStartIndex != -1)
-				log "Terminating character: ['#{currentChar}']", true				
-				startIndex = blockStartIndex
-				if startIndex == -1 
-					startIndex = katakanaStartIndex
-				end 
-				log "Terminating character: [#{currentChar}]", true
-				translatedBlock = translateBlock(line.slice(startIndex..currentIndex - 1))
-				if translatedBlock != nil
-					output += translatedBlock					
+		# check for script variables
+		lineToEnd = line.slice(currentIndex..-1)
+		scriptVar = scriptVariable(lineToEnd)
+					
+		# Current char is start of script variable or function
+		if scriptVar
+			# Bail on the entire line
+			if !$translateLinesWithVars
+				if isArray
+					return line
 				else 
-					output += line.slice(startIndex..currentIndex - 1)
+					return nil
 				end
-				blockStartIndex = -1
-				katakanaStartIndex = -1
-			end		
+			else
+				# Translate any in progress blocks
+				if(blockStartIndex != -1 or katakanaStartIndex != -1)
+					startIndex = blockStartIndex
+					if startIndex == -1 
+						startIndex = katakanaStartIndex
+					end 
+					block = line.slice(startIndex..currentIndex - 1)
+					
+					log "[#{$currentLineNumber}/#{$linesInFile}] Terminated block [#{block}] with script var: [#{scriptVar}] for line [#{line.strip}]"
+					translatedBlock = translateBlock(block)
+					if translatedBlock != nil
+						output += translatedBlock					
+					else 
+						output += block
+					end
+					blockStartIndex = -1
+					katakanaStartIndex = -1
+				end			
+			
+				output += scriptVar
+				currentIndex += scriptVar.length
+				next					
+			end
+		end				
 		
-			variableString = "#{variableBlock}"
-			currentIndex += variableString.length
-			output += variableString			
-			log "Variable: #{variableString}"
-			
-		elsif(currentChar == "\\" &&
-			currentIndex + 1 < line.length &&
-			line[currentIndex + 1] == '\\')
-			if(blockStartIndex != -1 or katakanaStartIndex != -1)
-				log "Terminating character: ['#{currentChar}']", true				
-				startIndex = blockStartIndex
-				if startIndex == -1 
-					startIndex = katakanaStartIndex
-				end 
-				log "Terminating character: [#{currentChar}]", true
-				translatedBlock = translateBlock(line.slice(startIndex..currentIndex - 1))
-				if translatedBlock != nil
-					output += translatedBlock					
-				else 
-					output += line.slice(startIndex..currentIndex - 1)
-				end
-				blockStartIndex = -1
-				katakanaStartIndex = -1
-			end
-			postToken = line.slice(currentIndex..-1)			
-			if postToken.index(']')
-				token = line[currentIndex..currentIndex + postToken.index("]")]	
-			elsif postToken.index(/[a-zA-Z]/)
-				token = line[currentIndex..currentIndex + postToken.index(/[a-zA-Z]/)]	
-			else 
-				log "unterminated block at line #{$currentLineNumber}: " + line, true
-				return nil
-			end
-			
-			log "found token: " + token, true
-			output += token
-			log "processed: " + output, true
-			currentIndex += token.length		
-		# check $ token block
-		elsif currentChar == "$"
-			if(blockStartIndex != -1 or katakanaStartIndex != -1)
-				log "Terminating character: ['#{currentChar}']", true				
-				startIndex = blockStartIndex
-				if startIndex == -1 
-					startIndex = katakanaStartIndex
-				end 
-				log "Terminating character: [#{currentChar}]", true
-				translatedBlock = translateBlock(line.slice(startIndex..currentIndex - 1))
-				if translatedBlock != nil
-					output += translatedBlock					
-				else 
-					output += line.slice(startIndex..currentIndex - 1)
-				end
-				blockStartIndex = -1
-				katakanaStartIndex = -1
-			end
-			token = line[currentIndex..currentIndex + line.slice(currentIndex..-1).index(/[ $\"]/)]
-			log "found token: " + token, true
-			output += token
-			log "processed: " + output, true
-			currentIndex += token.length
-		elsif isKatakana(currentChar) and $breakBlocksOnKatakana
-			if blockStartIndex != -1
-				translatedBlock = translateBlock(line.slice(blockStartIndex..currentIndex - 1))
-				log "katakana #{currentChar} broke block: #{line.slice(blockStartIndex..currentIndex - 1)}", true
-				if translatedBlock != nil
-					output += translatedBlock					
-				else 
-					output += line.slice(blockStartIndex..currentIndex - 1)
-				end
-				blockStartIndex = -1
-			end						
-			if katakanaStartIndex == -1 
-				katakanaStartIndex = currentIndex
-			end 
-			currentIndex += 1
-		elsif isTerminatingCharacter(currentChar)
+		currentChar = line[currentIndex]
+		
+		# Check if current character is not Japanese
+		if isTerminatingCharacter(currentChar)
+			# No block is in progress
 			if(blockStartIndex == -1 and katakanaStartIndex == -1)
 				output += currentChar
+			# A block was in progress so translate it
 			else
 				startIndex = blockStartIndex
 				if startIndex == -1 
@@ -332,9 +276,26 @@ end
 				katakanaStartIndex = -1
 				output += currentChar
 			end
+			currentIndex += 1		
+		# Check if current char is Katakana
+		elsif $breakBlocksOnKatakana and isKatakana(currentChar)
+			if blockStartIndex != -1
+				translatedBlock = translateBlock(line.slice(blockStartIndex..currentIndex - 1))
+				log "katakana #{currentChar} broke block: #{line.slice(blockStartIndex..currentIndex - 1)}", true
+				if translatedBlock != nil
+					output += translatedBlock					
+				else 
+					output += line.slice(blockStartIndex..currentIndex - 1)
+				end
+				blockStartIndex = -1
+			end						
+			if katakanaStartIndex == -1 
+				katakanaStartIndex = currentIndex
+			end 
 			currentIndex += 1
-		# not in a block
+		# Current character is Japanese
 		else
+			# Already in a translation block
 			if katakanaStartIndex != -1 
 				log "Broke katakana block #{line.slice(katakanaStartIndex..currentIndex - 1)} on character: [#{currentChar}]", true
 				translatedBlock = translateBlock(line.slice(katakanaStartIndex..currentIndex - 1))
@@ -347,6 +308,7 @@ end
 				katakanaStartIndex = -1	
 			end				
 			
+			# Start new translation block
 			if blockStartIndex == -1
 				log "starting translate block on character: " + currentChar, true
 				blockStartIndex = currentIndex
@@ -355,7 +317,7 @@ end
 		end
 	end 	
 	
-	if output.sub('",', '"').strip == line.sub('",', '"').strip
+	if !isArray and output.sub('",', '"').strip == line.sub('",', '"').strip
 		return nil
 	end
 	
@@ -376,7 +338,7 @@ end
 
 def translateFile(fileName)
 	log "\nTranslating: " + fileName
-	translateMode = false
+	translateArrayMode = false
 	writeMode = false
 	output = ""
 	
@@ -393,6 +355,9 @@ def translateFile(fileName)
 		source = File.join($extractedDataDir, fileNameNoExt + $dataExtension)
 		dest = File.join($dataDir, fileNameNoExt + $dataExtension)
 		log "Skipping file based on filter... Copying [#{source}] to [#{dest}]"
+		if !Dir.exists? $dataDir
+			Dir.mkdir $dataDir
+		end
 		FileUtils.cp_r source, dest, :remove_destination => true
 		return
 	elsif filter != nil and filter == 'Translate Single Lines'
@@ -409,26 +374,27 @@ def translateFile(fileName)
 		$currentLineNumber += 1
 		$totalProcessedLines += 1
 	
-		if(translateMode)
+		if(translateArrayMode)
 			if(line.strip == '],')
-				translateMode = false
+				translateArrayMode = false
 			else
-				transLine = translateLine(line)
+				transLine = translateLine(line, true)
 				if(transLine == nil)
-					translateMode = false								
+					translateArrayMode = false								
 				else 
 					$queue.push(transLine)
 				end
 			end			
 			output += line
-		elsif(line.include? '"original   "')	
+		elsif(line.match(/"original.*?".*?:/))	
 			log "original found: " + line, true
 			$lastOriginalLine = line			
 			stripped = line.strip
+			# check last character to see if this is a single line string or an array
 			if(stripped[stripped.length - 1] == '[')	
 				if !singleOnly
-					log "TRANSLATE MODE ON", true
-					translateMode = true
+					log "TRANSLATE ARRAY MODE ON", true
+					translateArrayMode = true
 				end
 			else
 				log "single line to translate: " + line, true		
@@ -514,18 +480,28 @@ def translateScriptFile(fileName)
 	file_content = File.open(fileName, "r:UTF-8", &:read)
 	file_content.each_line {|line|
 		if $currentLineNumber % $linesPerUpdate == 0
-			log "#{Time.now} Progress: Total [#{$totalProcessedLines}/#{$totalLines}] #{File.basename($outputPath) + "/" + File.basename(fileName)} [#{$currentLineNumber}/#{$linesInFile}] Cache hits [#{$totalCacheHits}] Translations [#{$totalTranslations}] Failures [#{$totalFailures}]"
+			totalPercentage = 0
+			if $totalLines > 0 
+				totalPercentage = $totalProcessedLines/$totalLines
+			end
+			filePercentage = 0
+			if $linesInFile > 0
+				filePercentage = $currentLineNumber/$linesInFile
+			end
+			log "#{Time.now} Progress: Total [#{$totalProcessedLines}/#{$totalLines}] (#{totalPercentage}%) #{File.basename($outputPath) + "/" + File.basename(fileName)} [#{$currentLineNumber}/#{$linesInFile}] (#{filePercentage}%) Cache hits [#{$totalCacheHits}] Translations [#{$totalTranslations}] Failures [#{$totalFailures}]"
 		end
 	
 		#lineToTrans = line.match(/((.*?)([^ ]+?) +=( *?)".+")?/)
-		lineToTrans = line.match(/([^ ]+) *= *".+"/)
+		lineToTrans = line.match(/([^ ]+?) *= *".+?"/)
 		if lineToTrans 
+			log "Translating #{lineToTrans}"
 			original = "#{lineToTrans}"
-			original = original.match(/".+"/)
+			original = original.match(/".+?"/)
 			original = "#{original}"
-			original = original.match(/".+"/)			
+			original = original.match(/".+?"/)			
 			original = "#{original}"
-			#original.slice(1, original.length - 2)
+			log "Turned out to be #{original}"
+			# insert apostrophes after string tokens for の and remove double spaces
 			trans = translateLine(original.gsub("%sの", "%s's ").gsub(/(%s)(?=[^(%s)])(?=[^'])/, '%s ').gsub(/[ ]{2,}/, ' '))
 			if trans != nil
 				output += line.sub(original, trans)
@@ -533,10 +509,12 @@ def translateScriptFile(fileName)
 				output += line
 			end	
 		else 
-			output += line
+			output += line 
 		end
 		$currentLineNumber += 1
 	}
+	
+	output = output.gsub("\n", "\r\n")
 	
 	outputFileName = fileName.slice(0.. fileName.rindex(File.extname(fileName)) - 1)
 	outputFileName += "_tran.rb"
@@ -558,14 +536,16 @@ def decryptData
 	else 
 		log "Failed to find game data file!"
 	end
-	log "Found game data file: #{$gameDataFileName}"
+	
+	if $gameDataFileName
+		log "Found game data file: #{$gameDataFileName}"
+	end
 	
 	dataDirExisted = Dir.exists? $dataDir
+	# Back up the originals only once
 	backup = File.join($outputPath, 'DataOriginal')
-	if $preserveExistingData and dataDirExisted and !Dir.exists? File.join($outputPath, 'DataOriginal')		
-		if !Dir.exists? backup
-			Dir.mkdir backup
-		end
+	if $preserveExistingData and dataDirExisted and !Dir.exists? backup		
+		Dir.mkdir backup
 		FileUtils.cp_r File.join($dataDir, '.'), backup
 	end
 
@@ -575,25 +555,31 @@ def decryptData
 		begin
 			log `#{command}`		
 		rescue Exception => e  
-			log "RgssDecrypter crashed with message: #{e}", false, true
-			abort()
+			log "Error: RgssDecrypter crashed with message: #{e}", false, true
+			abort
 		end	
 	end
 	
-	if $skipDataExtract and Dir.exists?($extractedDataDir)
+	if $skipDataExtract 
 		log "Skipping data extract, keeping #{$extractedDataDir} and #{$extractedJsonDir}"
-		FileUtils.rm_rf $dataDir
-	else 
-		FileUtils.rm_rf $extractedDataDir	
-		log "Moving Data to #{$extractedDataDir}"
+	elsif !Dir.exists?($extractedDataDir)
+		log "Moving Data from [#{backup}] to [#{$extractedDataDir}]"
+		#Dir.mkdir $extractedDataDir
 		FileUtils.mv $dataDir, $extractedDataDir, :force => true 
 	end	
 	
-	Dir.mkdir $dataDir unless Dir.exists? $dataDir
+	if Dir.exists? $dataDir
+		FileUtils.rm_rf $dataDir
+	end
 	
-	if dataDirExisted and $preserveExistingData
-		log "Moving original data files into #{$extractedDataDir}"
+	if $preserveExistingData and Dir.exists? backup
+		log "Moving backed up original data files into #{$extractedDataDir}"
 		FileUtils.cp_r File.join(backup, '.'), $extractedDataDir, :remove_destination => true
+	end
+	
+	if !Dir.exists? $extractedDataDir
+		log "MP"
+		abort()
 	end
 	
 	# get the file extension
@@ -661,9 +647,21 @@ def dumpJson
 end
 
 def packageDataFileFromJson
+	if !Dir.exists? $extractedDataDir
+		log "Extracted data directory doesn't exist, nothing to do", false, true	
+		return
+	end
+	if !Dir.exists? $dataDir
+		Dir.mkdir $dataDir
+	end
 	command = "ruby \"#{File.join(Dir.pwd, "3rdParty/rmxp_translator/#{$translatorTool}")}\" --translate=\"#{File.join($extractedDataDir, "*#{$dataExtension}")}\" --dest=\"#{$dataDir}\""
 	log "Running command: #{command}", false, true
 	log `#{command}`, false, true
+	
+	if $gameDataFileName and File.exists? $gameDataFileName
+		log "Moving data file [#{$gameDataFileName}] to backup [#{$gameDataFileName + ".backup"}]"
+		FileUtils.mv $gameDataFileName, $gameDataFileName + ".backup", :force => true
+	end
 end
 
 def computeTotalLines
@@ -718,7 +716,11 @@ def loadSettings
 			end									
 			if hash.key?("translateLinesWithVars")
 				$translateLinesWithVars = !hash["translateLinesWithVars"].zero?
-			end	
+			end				
+			if hash.key?("overrideCharacters")
+				overrideChars = hash["overrideCharacters"]
+				$overrideCharacters = Regexp.quote("[#{overrideChars}]")
+			end				
 			
 			if hash.key?("outputLanguage")
 				$outputLanguage = hash["outputLanguage"]
@@ -792,14 +794,9 @@ def loadCache
 end
 
 def translateDirectory
-	if $skipTranslate 
-		log "Skipping translation step"
-	else
+	if $translateScripts or !$skipTranslate
 		loadCache
-		computeTotalLines	
 	end
-	
-	processed = false	
 	
 	if $translateScripts
 		$scriptDir = File.join($extractedDataDir, "scripts")
@@ -815,6 +812,16 @@ def translateDirectory
 		  end
 		end	
 	end	
+
+	if $skipTranslate 
+		log "Skipping translation step"
+		return
+	else
+		computeTotalLines	
+	end
+	
+	processed = false	
+	
 	
 	Dir.foreach($extractedJsonDir) do |item|
 	  next if item == '.' or item == '..' or  File.extname(item) != '.json'	  
@@ -830,8 +837,6 @@ def translateDirectory
 	if processed && !$skipTranslate 
 		dumpCache
 	end
-		
-	return processed
 end
 
 def setupLog
@@ -870,9 +875,15 @@ def copyGameDirectoryToOutput
 	Dir.mkdir $outputPath
 	setupLog
 	log "Copying [#{$directory}] to [#{$outputPath}]"	
-	FileUtils.cp_r File.join($directory, '.'), $outputPath
+	begin
+		FileUtils.cp_r File.join($directory, '.'), $outputPath
+	rescue Exception => e  
+		log "Error: Failed to copy source to output directory with message: #{e.message}"
+		abort
+	end
 end
 
+# main
 if __FILE__ == $0
 	startTime = Time.now
 	if ARGV[0] == nil
@@ -888,14 +899,8 @@ if __FILE__ == $0
 	copyGameDirectoryToOutput
 	decryptData	
 	dumpJson	
-	if translateDirectory	
-		packageDataFileFromJson
-		
-		if $gameDataFileName and File.exists? $gameDataFileName
-			log "Moving data file [#{$gameDataFileName}] to backup [#{$gameDataFileName + ".backup"}]"
-			FileUtils.mv $gameDataFileName, $gameDataFileName + ".backup", :force => true
-		end
-	end
+	translateDirectory
+	packageDataFileFromJson
 		
 	log "Processed #{$totalLines} lines in #{Time.now - startTime} seconds", false, true
 end

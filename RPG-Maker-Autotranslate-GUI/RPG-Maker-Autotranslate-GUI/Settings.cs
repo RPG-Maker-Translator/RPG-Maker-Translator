@@ -68,6 +68,9 @@ namespace RPGMakerTranslator
             ToolTip skipTranslationToolTip = new ToolTip();
             outputToolTip.SetToolTip(skipTranslateCheckbox, "Skip processing translation on all JSON files");
 
+            ToolTip overrideToolTip = new ToolTip();
+            outputToolTip.SetToolTip(characterOverrideTextbox, "Characters will not break translation blocks, for example with a \",\" in the box.\nCharacters should be entered side by side without being escaped or having whitespace, commas, etc");
+
             if (File.Exists("languages.json"))
             {
                 using (StreamReader r = new StreamReader("languages.json"))
@@ -117,6 +120,7 @@ namespace RPGMakerTranslator
                         breakBlocksOnKatakanaCheckbox.Checked = values["breakBlocksOnKatakana"] != "0" ? true : false;
                         translateScriptsCheckbox.Checked = values["translateScripts"] != "0" ? true : false;
                         translateLinesWithVars.Checked = values["translateLinesWithVars"] != "0" ? true : false;
+                        characterOverrideTextbox.Text = values["overrideCharacters"].ToString();
 
                         if (values.Keys.Contains("outputLanguage"))
                         {
@@ -215,7 +219,8 @@ namespace RPGMakerTranslator
                 r.Write("\"breakBlocksOnKatakana\": " + (breakBlocksOnKatakanaCheckbox.Checked ? "1" : "0") + ",\n");
                 r.Write("\"translateScripts\": " + (translateScriptsCheckbox.Checked ? "1" : "0") + ",\n");
                 r.Write("\"translateLinesWithVars\": " + (translateLinesWithVars.Checked ? "1" : "0") + ",\n");
-                r.Write("\"outputLanguage\": \"" + ((DataRowView)outputLanguageComboBox.SelectedValue)["Code"] +"\",\n");
+                r.Write("\"overrideCharacters\": \"" + characterOverrideTextbox.Text + "\",\n");
+                r.Write("\"outputLanguage\": \"" + ((DataRowView)outputLanguageComboBox.SelectedValue)["Code"] +"\",\n");                
                 for (int i = 0; i < fileNames.Length; ++i)
                 {
                     string file = fileNames[i];
