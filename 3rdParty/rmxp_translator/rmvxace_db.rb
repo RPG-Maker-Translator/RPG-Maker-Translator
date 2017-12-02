@@ -876,7 +876,7 @@ module RPG
       @name = translate_string("name", @name, tran, info)
       @list = merge_event_commands(@list)
       @list = translate_list("commands", @list, tran, info)
-      @list = merge_event_commands(@list)
+      @list = split_event_commands(@list)
       self
     end
 
