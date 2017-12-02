@@ -1224,6 +1224,7 @@ EVENT_COMMAND_CODES = {
   411 => ["Else", false],
   412 => ["Branch End", false],
   413 => ["Repeat Above", false],
+  505 => ["Move Command", false],
   601 => ["If Win", false],
   602 => ["If Escape", false],
   603 => ["If Lose", false],
