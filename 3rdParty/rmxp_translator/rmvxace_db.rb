@@ -876,7 +876,7 @@ module RPG
       @name = translate_string("name", @name, tran, info)
       @list = merge_event_commands(@list)
       @list = translate_list("commands", @list, tran, info)
-      @list = merge_event_commands(@list)
+      @list = split_event_commands(@list)
       self
     end
 
@@ -1224,6 +1224,7 @@ EVENT_COMMAND_CODES = {
   411 => ["Else", false],
   412 => ["Branch End", false],
   413 => ["Repeat Above", false],
+  505 => ["Move Command", false],
   601 => ["If Win", false],
   602 => ["If Escape", false],
   603 => ["If Lose", false],
